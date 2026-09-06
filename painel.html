@@ -30,7 +30,8 @@ $('.product-form').addEventListener('submit',async e=>{
  e.preventDefault();e.stopImmediatePropagation();
  if(savingProduct)return;
  savingProduct=true;
- const saveButton=e.currentTarget.querySelector('button[type="submit"]'),originalText=saveButton.textContent;
+ const productForm=e.currentTarget;
+ const saveButton=productForm.querySelector('button[type="submit"]'),originalText=saveButton.textContent;
  saveButton.disabled=true;saveButton.textContent='Salvando produto...';
  const id=$('#productId').value,file=imageFile.files[0];
  try{
@@ -42,7 +43,7 @@ $('.product-form').addEventListener('submit',async e=>{
   await load();
   alert('✅ Produto salvo com sucesso!');
   $('#productDialog').close();
-  e.currentTarget.reset();
+  productForm.reset();
   $('#productId').value='';
   $('#imageUrl').value='';
   $('#category').value=cats[0];
