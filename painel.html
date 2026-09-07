@@ -107,22 +107,71 @@ const importStyle=document.createElement('style');
 importStyle.textContent=`.quick-import{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #ffd2c6;background:#fff7f3;border-radius:13px}.quick-import strong{color:#bd381b}.quick-import span,.quick-import small{font-size:12px;color:#68727c}.quick-import textarea{width:100%;border:1px solid #e7e9ec;border-radius:10px;padding:11px;font:inherit;resize:vertical}.quick-import button{border:0;border-radius:10px;padding:11px;background:#17212b;color:#fff;font-weight:800}.quick-import small.ok{color:#08763b;font-weight:800}`;
 document.head.appendChild(importStyle);
 
+const subcategoryOptions={
+ 'Moda feminina':['Vestidos','Blusas e camisas','Calças e shorts','Saias','Moda íntima','Moda fitness','Moda praia','Bolsas','Acessórios femininos'],
+ 'Moda masculina':['Camisetas e camisas','Calças e bermudas','Moda íntima','Moda fitness','Bonés','Carteiras','Acessórios masculinos'],
+ 'Infantil':['Roupas para meninas','Roupas para meninos','Roupas para bebê','Calçados infantis','Brinquedos','Acessórios infantis'],
+ 'Casa':['Organização','Limpeza','Banheiro','Quarto','Sala e decoração','Lavanderia','Utilidades domésticas'],
+ 'Cozinha':['Utensílios de cozinha','Eletroportáteis','Panelas e frigideiras','Potes e organização','Copos e garrafas','Talheres e facas','Formas e confeitaria'],
+ 'Beleza':['Maquiagem','Cuidados com a pele','Cuidados com o cabelo','Unhas','Perfumes','Higiene pessoal','Acessórios de beleza'],
+ 'Eletrônicos':['Áudio','Iluminação','Informática','Cabos e adaptadores','Acessórios eletrônicos','Casa inteligente'],
+ 'Celulares':['Capinhas','Carregadores','Fones de ouvido','Suportes','Películas','Cabos','Acessórios para celular'],
+ 'Pets':['Cães','Gatos','Higiene pet','Brinquedos para pets','Alimentação pet','Acessórios para pets'],
+ 'Ferramentas':['Ferramentas manuais','Ferramentas elétricas','Medição','Pintura','Organização de ferramentas'],
+ 'Automotivo':['Acessórios internos','Limpeza automotiva','Acessórios para moto','Iluminação automotiva','Organização automotiva'],
+ 'Papelaria':['Materiais escolares','Canetas e lápis','Cadernos','Estojos','Organização de escritório'],
+ 'Calçados':['Calçados femininos','Calçados masculinos','Calçados infantis','Chinelos','Tênis']
+};
+const subcategoryList=document.createElement('datalist');subcategoryList.id='subcategorySuggestions';document.body.appendChild(subcategoryList);$('#subcategory').setAttribute('list','subcategorySuggestions');
+function updateSubcategorySuggestions(){subcategoryList.innerHTML=(subcategoryOptions[$('#category').value]||[]).map(x=>`<option value="${x}">`).join('')}
+$('#category').addEventListener('change',updateSubcategorySuggestions);updateSubcategorySuggestions();
+
 function guessProductType(text){
- const s=text.toLowerCase();
+ const s=text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ const has=(...words)=>words.some(word=>s.includes(word));
+ if(has('feminina','feminino','mulher','dama','vestido','saia','sutia','lingerie','cropped','bolsa feminina')){
+  if(has('tenis','sandalia','chinelo','sapato','salto'))return{category:'Calçados',subcategory:'Calçados femininos'};
+  if(has('bolsa','carteira'))return{category:'Moda feminina',subcategory:'Bolsas'};
+  if(has('sutia','calcinha','lingerie'))return{category:'Moda feminina',subcategory:'Moda íntima'};
+  if(has('fitness','academia','legging'))return{category:'Moda feminina',subcategory:'Moda fitness'};
+  return{category:'Moda feminina',subcategory:has('vestido')?'Vestidos':'Blusas e camisas'};
+ }
+ if(has('masculina','masculino','homem','rapaz','cueca','gravata','barba')){
+  if(has('tenis','sandalia','chinelo','sapato'))return{category:'Calçados',subcategory:'Calçados masculinos'};
+  if(has('cueca'))return{category:'Moda masculina',subcategory:'Moda íntima'};
+  if(has('carteira'))return{category:'Moda masculina',subcategory:'Carteiras'};
+  return{category:'Moda masculina',subcategory:has('bermuda','calca')?'Calças e bermudas':'Camisetas e camisas'};
+ }
  const rules=[
-  [['mixer','liquidificador','processador','batedor','cafeteira','chaleira','elétric','eletric'],'Cozinha','Eletroportáteis'],
-  [['panela','frigideira','faca','talher','copo','prato','pote','balança','espátula','forma','peneira','coador'],'Cozinha','Utensílios de cozinha'],
-  [['vestido','blusa','saia','sutiã','lingerie'],'Moda feminina','Roupas femininas'],
-  [['camiseta','bermuda','calça masculina','carteira masculina'],'Moda masculina','Roupas masculinas'],
-  [['maquiagem','batom','rímel','perfume','creme','shampoo'],'Beleza','Cuidados pessoais'],
-  [['cabo','carregador','fone','suporte celular','capinha'],'Celulares','Acessórios'],
-  [['lâmpada','led','tomada','extensão'],'Eletrônicos','Iluminação e acessórios'],
-  [['cachorro','gato','pet','coleira'],'Pets','Acessórios para pets'],
-  [['brinquedo','boneca','carrinho infantil'],'Infantil','Brinquedos'],
-  [['caderno','caneta','lápis','estojo'],'Papelaria','Materiais escolares']
+  [['bebe','recem-nascido','menina infantil','menino infantil','crianca'],'Infantil','Roupas para bebê'],
+  [['boneca','carrinho infantil','brinquedo','quebra-cabeca'],'Infantil','Brinquedos'],
+  [['tenis','sandalia','chinelo','sapato','sapatilha'],'Calçados','Tênis'],
+  [['mixer','liquidificador','processador','batedor','cafeteira','chaleira','air fryer','eletrico','eletrica'],'Cozinha','Eletroportáteis'],
+  [['panela','frigideira'],'Cozinha','Panelas e frigideiras'],
+  [['peneira','coador','faca','talher','espátula','espatula','balanca culinaria','abridor','ralador','escorredor'],'Cozinha','Utensílios de cozinha'],
+  [['pote','porta-tempero','organizador de cozinha'],'Cozinha','Potes e organização'],
+  [['garrafa','copo','caneca','xícara','xicara'],'Cozinha','Copos e garrafas'],
+  [['forma','confeitaria','bolo','bico de confeitar'],'Cozinha','Formas e confeitaria'],
+  [['maquiagem','batom','rimel','mascara de cilios','base facial'],'Beleza','Maquiagem'],
+  [['shampoo','condicionador','escova de cabelo','pente','touca'],'Beleza','Cuidados com o cabelo'],
+  [['perfume','colonia'],'Beleza','Perfumes'],
+  [['unha','esmalte','alicate de cuticula'],'Beleza','Unhas'],
+  [['capinha','pelicula'],'Celulares','Capinhas'],
+  [['carregador','cabo usb','cabo tipo c'],'Celulares','Carregadores'],
+  [['fone','earphone','headset'],'Celulares','Fones de ouvido'],
+  [['suporte celular','tripé celular','tripe celular'],'Celulares','Suportes'],
+  [['lampada','led','luminaria'],'Eletrônicos','Iluminação'],
+  [['teclado','mouse','pendrive','webcam'],'Eletrônicos','Informática'],
+  [['cachorro','gato','pet','coleira','comedouro','areia sanitaria'],'Pets','Acessórios para pets'],
+  [['furadeira','parafusadeira','alicate','chave de fenda','martelo'],'Ferramentas','Ferramentas manuais'],
+  [['carro','moto','automotivo','veicular'],'Automotivo','Acessórios internos'],
+  [['caderno','caneta','lapis','estojo','marca-texto'],'Papelaria','Materiais escolares'],
+  [['toalha','tapete','cortina','almofada','lencol'],'Casa','Quarto'],
+  [['organizador','caixa organizadora','cabide'],'Casa','Organização'],
+  [['vassoura','rodo','esponja','limpeza'],'Casa','Limpeza']
  ];
  for(const [words,category,subcategory] of rules)if(words.some(word=>s.includes(word)))return{category,subcategory};
- return{category:'Casa',subcategory:'Utilidades'};
+ return{category:'Casa',subcategory:'Utilidades domésticas — revisar'};
 }
 
 $('#fillShopee').addEventListener('click',()=>{
@@ -137,7 +186,7 @@ $('#fillShopee').addEventListener('click',()=>{
  const candidates=clean.split(/\n|\||•/).map(x=>x.replace(/\s+/g,' ').trim()).filter(x=>x.length>5&&!ignored.test(x));
  const name=(titleMatch?.[1]||candidates.sort((a,b)=>b.length-a.length)[0]||'').replace(/\s+/g,' ').trim().slice(0,150);
  if(name)$('#name').value=name;if(price)$('#price').value=price;if(url)$('#affiliateUrl').value=url;
- const type=guessProductType(`${name} ${raw}`);$('#category').value=type.category;$('#subcategory').value=type.subcategory;
+ const type=guessProductType(`${name} ${raw}`);$('#category').value=type.category;updateSubcategorySuggestions();$('#subcategory').value=type.subcategory;
  if(name)$('#description').value=`${name}. Produto selecionado para facilitar o dia a dia, com bom custo-benefício e preço de até R$20. Confira no anúncio da Shopee as medidas, materiais, opções disponíveis e avaliações de outros compradores antes de finalizar a compra.`;
  $('#priceWarning').hidden=!price||price<=20;
  message.textContent=`✓ Informações preenchidas${!url?' — confira o link':!price?' — confira o preço':''}.`;message.className='ok';
