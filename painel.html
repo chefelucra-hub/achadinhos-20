@@ -191,4 +191,94 @@ $('#fillShopee').addEventListener('click',()=>{
  $('#priceWarning').hidden=!price||price<=20;
  message.textContent=`✓ Informações preenchidas${!url?' — confira o link':!price?' — confira o preço':''}.`;message.className='ok';
 });
+// Classificador revisado: evita enviar qualquer item desconhecido para Casa.
+const extraCategories={
+ 'Saúde e bem-estar':['Sono e respiração','Cuidados pessoais','Massagem e relaxamento','Acessórios de saúde'],
+ 'Esportes e lazer':['Corrida e academia','Fitness','Ciclismo','Camping e lazer','Acessórios esportivos'],
+ 'Comércio e embalagens':['Embalagens','Etiquetas e lacres','Exposição e organização']
+};
+for(const [category,subs] of Object.entries(extraCategories)){
+ if(!cats.includes(category))cats.push(category);
+ subcategoryOptions[category]=subs;
+ if(![...$('#category').options].some(o=>o.value===category))$('#category').add(new Option(category,category));
+ if(![...$('#adminCategory').options].some(o=>o.value===category))$('#adminCategory').add(new Option(category,category));
+}
+
+function cleanProductName(value=''){
+ return String(value)
+  .replace(/^\s*d[eê]\s+uma\s+olhada\s+em\s+/i,'')
+  .replace(/\s+por\s+R\$\s*[\d.,]+[\s\S]*$/i,'')
+  .replace(/\s+compre\s+na\s+shopee[\s\S]*$/i,'')
+  .replace(/^\s*\[destaque\]\s*/i,'')
+  .replace(/\s+/g,' ').trim().slice(0,150);
+}
+function normalized(value=''){return String(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+guessProductType=function(text){
+ const s=normalized(text),has=(...words)=>words.some(word=>s.includes(normalized(word)));
+ if(has('top plus size','baby tee','blusa feminina','cropped','short tactel feminino','vestido','saia','sutia','lingerie','calcinha')){
+  if(has('fitness','academia','legging','top plus size','short tactel'))return{category:'Moda feminina',subcategory:'Moda fitness'};
+  if(has('sutia','lingerie','calcinha'))return{category:'Moda feminina',subcategory:'Moda íntima'};
+  if(has('vestido'))return{category:'Moda feminina',subcategory:'Vestidos'};
+  return{category:'Moda feminina',subcategory:'Blusas e camisas'};
+ }
+ if(has('cueca','camiseta masculina','moletom masculino','blusa masculina'))return{category:'Moda masculina',subcategory:has('cueca')?'Moda íntima':'Camisetas e camisas'};
+ if(has('relogio')&&has('mulher','feminino','feminina'))return{category:'Moda feminina',subcategory:'Acessórios femininos'};
+ if(has('relogio')&&has('homem','masculino','masculina'))return{category:'Moda masculina',subcategory:'Acessórios masculinos'};
+ if(has('pochete corrida','cinto de corrida','porta garrafa academia'))return{category:'Esportes e lazer',subcategory:'Corrida e academia'};
+ if(has('anti ronco','apneia','clipe nasal','dilatador nasal'))return{category:'Saúde e bem-estar',subcategory:'Sono e respiração'};
+ if(has('escova linfatica facial','massageador facial'))return{category:'Beleza',subcategory:'Cuidados com a pele'};
+ if(has('lixador de pe','tira calos','pedicure'))return{category:'Beleza',subcategory:'Cuidados pessoais'};
+ if(has('removedor de cuticula','lixa eletronica','lixadeira unha','esmalte'))return{category:'Beleza',subcategory:'Unhas'};
+ if(has('pente','escova de cabelo','tranca','shampoo','condicionador'))return{category:'Beleza',subcategory:'Cuidados com o cabelo'};
+ if(has('perfume','difusor de aromas','aromatizador'))return{category:'Casa',subcategory:'Sala e decoração'};
+ if(has('capinha','case para iphone','pelicula'))return{category:'Celulares',subcategory:'Capinhas'};
+ if(has('adaptador usb','cabo otg','cabo tipo c','cabo usb','transferencia de dados'))return{category:'Eletrônicos',subcategory:'Cabos e adaptadores'};
+ if(has('fone','headset','earphone'))return{category:'Celulares',subcategory:'Fones de ouvido'};
+ if(has('lampada','luminaria','luz led','iluminacao'))return{category:'Eletrônicos',subcategory:'Iluminação'};
+ if(has('alicate','chave de fenda','chave t ','chave de cruz','maleta 12 pecas','pulseira magnetica','furadeira','parafusadeira','martelo'))return{category:'Ferramentas',subcategory:'Ferramentas manuais'};
+ if(has('carro','moto','pneu','para-brisa','veicular','automotivo','amassado'))return{category:'Automotivo',subcategory:'Acessórios internos'};
+ if(has('peneira','coador','descascador','fatiador','cortador couve','espremedor','amassador de alho','ralador','abridor de garrafa','balanca digital','balanca de precisao'))return{category:'Cozinha',subcategory:'Utensílios de cozinha'};
+ if(has('mixer','processador eletrico','batedor','liquidificador','cafeteira','chaleira'))return{category:'Cozinha',subcategory:'Eletroportáteis'};
+ if(has('processador manual','triturador manual'))return{category:'Cozinha',subcategory:'Utensílios de cozinha'};
+ if(has('forma de silicone','air fryer','confeitaria','forma de bolo'))return{category:'Cozinha',subcategory:'Formas e confeitaria'};
+ if(has('pote','mantimento','porta-tempero','organizador de cozinha','adesivos para mantimentos'))return{category:'Cozinha',subcategory:'Potes e organização'};
+ if(has('garrafa','copo','caneca','xicara'))return{category:'Cozinha',subcategory:'Copos e garrafas'};
+ if(has('percarbonato','tira manchas','pregador de roupa','cesto de roupa','lavanderia'))return{category:'Casa',subcategory:'Lavanderia'};
+ if(has('etiqueta de roupa','tag para roupa','lacre de autenticidade','saquinho transparente','embalagem'))return{category:'Comércio e embalagens',subcategory:has('etiqueta','tag','lacre')?'Etiquetas e lacres':'Embalagens'};
+ if(has('organizador','caixa de armazenamento','gaveta','cabide','suporte de parede'))return{category:'Casa',subcategory:'Organização'};
+ if(has('vassoura','rodo','limpeza','escova para vaso','duster'))return{category:'Casa',subcategory:'Limpeza'};
+ if(has('cachorro','gato','pet','coleira','comedouro','areia sanitaria'))return{category:'Pets',subcategory:'Acessórios para pets'};
+ if(has('caderno','caneta','lapis','estojo','marca-texto'))return{category:'Papelaria',subcategory:'Materiais escolares'};
+ return{category:'Casa',subcategory:'Outros — conferir'};
+};
+
+function safeDescription(name,category,subcategory){
+ return `${name}. Veja as fotos e confira no anúncio da Shopee os tamanhos, materiais, modelos, cores, disponibilidade e avaliações antes da compra.`;
+}
+
+const fixCatalogButton=document.createElement('button');
+fixCatalogButton.type='button';fixCatalogButton.className='primary fix-catalog';fixCatalogButton.textContent='✓ Corrigir catálogo';
+document.querySelector('.content header').appendChild(fixCatalogButton);
+const fixStyle=document.createElement('style');
+fixStyle.textContent='.content header{gap:10px;flex-wrap:wrap}.fix-catalog{background:#08763b}@media(max-width:750px){.fix-catalog{width:100%;order:3}}';document.head.appendChild(fixStyle);
+fixCatalogButton.addEventListener('click',async()=>{
+ if(!items.length)return alert('Nenhum produto carregado.');
+ if(!confirm(`Revisar automaticamente nome, categoria e subcategoria dos ${items.length} produtos? Os itens não identificados ficarão marcados como “conferir”.`))return;
+ fixCatalogButton.disabled=true;const original=fixCatalogButton.textContent;let changed=0,failed=0;
+ for(let i=0;i<items.length;i++){
+  const item=items[i],name=cleanProductName(item.name),type=guessProductType(name),patch={};
+  if(name&&name!==item.name)patch.name=name;
+  if(type.category!==item.category)patch.category=type.category;
+  if(type.subcategory!==item.subcategory)patch.subcategory=type.subcategory;
+  if(!item.description||/Produto selecionado para facilitar o dia a dia/i.test(item.description))patch.description=safeDescription(name||item.name,type.category,type.subcategory);
+  if(!Object.keys(patch).length)continue;
+  fixCatalogButton.textContent=`Corrigindo ${i+1}/${items.length}...`;
+  try{await api(`/rest/v1/products?id=eq.${item.id}`,{method:'PATCH',body:JSON.stringify(patch),headers:{Prefer:'return=minimal'}});changed++}catch{failed++}
+ }
+ await load();fixCatalogButton.disabled=false;fixCatalogButton.textContent=original;
+ alert(failed?`Correção concluída: ${changed} produtos ajustados e ${failed} precisam de revisão manual.`:`✅ Catálogo corrigido! ${changed} produtos foram ajustados.`);
+});
+
+// Nomes novos também são limpos antes de salvar.
+$('#name').addEventListener('blur',()=>{$('#name').value=cleanProductName($('#name').value)});
 </script></body></html>
