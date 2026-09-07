@@ -111,7 +111,7 @@ function guessProductType(text){
  const s=text.toLowerCase();
  const rules=[
   [['mixer','liquidificador','processador','batedor','cafeteira','chaleira','elétric','eletric'],'Cozinha','Eletroportáteis'],
-  [['panela','frigideira','faca','talher','copo','prato','pote','balança','espátula','forma'],'Cozinha','Utensílios de cozinha'],
+  [['panela','frigideira','faca','talher','copo','prato','pote','balança','espátula','forma','peneira','coador'],'Cozinha','Utensílios de cozinha'],
   [['vestido','blusa','saia','sutiã','lingerie'],'Moda feminina','Roupas femininas'],
   [['camiseta','bermuda','calça masculina','carteira masculina'],'Moda masculina','Roupas masculinas'],
   [['maquiagem','batom','rímel','perfume','creme','shampoo'],'Beleza','Cuidados pessoais'],
@@ -131,13 +131,14 @@ $('#fillShopee').addEventListener('click',()=>{
  const url=(raw.match(/https?:\/\/[^\s]+/i)||[])[0]||'';
  const priceMatch=raw.match(/R\$\s*([0-9.]+(?:,[0-9]{1,2})?)/i);
  const price=priceMatch?Number(priceMatch[1].replace(/\./g,'').replace(',','.')):null;
+ const titleMatch=raw.match(/dê\s+uma\s+olhada\s+em\s+(.+?)\s+por\s+R\$/i);
  const clean=raw.replace(/https?:\/\/[^\s]+/gi,' ').replace(/R\$\s*[0-9.,]+/gi,' ');
  const ignored=/comiss|cupom|frete|copiar|shopee|ganhe|desconto|oferta|link/i;
  const candidates=clean.split(/\n|\||•/).map(x=>x.replace(/\s+/g,' ').trim()).filter(x=>x.length>5&&!ignored.test(x));
- const name=candidates.sort((a,b)=>b.length-a.length)[0]?.slice(0,120)||'';
+ const name=(titleMatch?.[1]||candidates.sort((a,b)=>b.length-a.length)[0]||'').replace(/\s+/g,' ').trim().slice(0,150);
  if(name)$('#name').value=name;if(price)$('#price').value=price;if(url)$('#affiliateUrl').value=url;
  const type=guessProductType(`${name} ${raw}`);$('#category').value=type.category;$('#subcategory').value=type.subcategory;
- if(name&&!$('#description').value)$('#description').value=`Confira ${name}. Uma opção selecionada para quem busca praticidade e bom preço. Veja os detalhes, tamanhos, cores e condições disponíveis diretamente na Shopee.`;
+ if(name)$('#description').value=`${name}. Produto selecionado para facilitar o dia a dia, com bom custo-benefício e preço de até R$20. Confira no anúncio da Shopee as medidas, materiais, opções disponíveis e avaliações de outros compradores antes de finalizar a compra.`;
  $('#priceWarning').hidden=!price||price<=20;
  message.textContent=`✓ Informações preenchidas${!url?' — confira o link':!price?' — confira o preço':''}.`;message.className='ok';
 });
