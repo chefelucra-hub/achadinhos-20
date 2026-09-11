@@ -1,0 +1,3 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+const html=readFileSync('admin.html','utf8'),css=readFileSync('admin.css','utf8')+readFileSync('photo.css','utf8'),config=readFileSync('config.js','utf8'),js=readFileSync('admin.js','utf8')+'\n'+readFileSync('photo-upload.js','utf8'),logo=readFileSync('logo-achadinhos-20.png').toString('base64');
+writeFileSync('Painel-Achadinhos-20.html',html.replace('<link rel="stylesheet" href="admin.css"><link rel="stylesheet" href="photo.css">',`<style>${css}</style>`).replaceAll('logo-achadinhos-20.png',`data:image/png;base64,${logo}`).replace('<script src="config.js"></script><script src="admin.js"></script><script src="photo-upload.js"></script>',`<script>${config}\n${js}</script>`));
