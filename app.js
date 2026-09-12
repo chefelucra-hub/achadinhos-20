@@ -9,9 +9,16 @@ const catalog={
 const seed=[];let products=seed,active='Todos',activeSub='Todos';
 const $=s=>document.querySelector(s),money=v=>Number(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function escapeHtml(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function normalizeText(s=''){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
 function render(){
- const q=$('#search').value.trim().toLowerCase();
- let list=products.filter(p=>p.price<=20&&(active==='Todos'||p.category===active)&&(activeSub==='Todos'||p.subcategory===activeSub)&&`${p.name} ${p.category} ${p.subcategory||''} ${p.description||''}`.toLowerCase().includes(q));
+ const q=normalizeText($('#search').value.trim());
+ let list=products.filter(p=>{
+  const text=normalizeText(`${p.name} ${p.category} ${p.subcategory||''} ${p.description||''}`);
+  const matchesSearch=!q||text.includes(q);
+  const matchesCategory=q?true:(active==='Todos'||p.category===active);
+  const matchesSub=q?true:(activeSub==='Todos'||p.subcategory===activeSub);
+  return p.price<=20&&matchesSearch&&matchesCategory&&matchesSub;
+ });
  const sort=$('#sort').value;list.sort((a,b)=>sort==='low'?a.price-b.price:sort==='high'?b.price-a.price:sort==='new'?String(b.id).localeCompare(String(a.id)):(b.popular||0)-(a.popular||0));
  $('#count').textContent=`${list.length} produtos`;
  $('#products').innerHTML=list.map(p=>`<article class="card"><div class="photo">${p.image?`<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`:'<span class="emoji">🛒️</span>'}<span class="badge">ATÉ R$20</span></div><div class="card-body"><span class="category">${escapeHtml(p.category)} · ${escapeHtml(p.subcategory||'Geral')}</span><div class="rating">★★★★★ <span>selecionado</span></div><h3>${escapeHtml(p.name)}</h3><div class="price-row"><div class="price">${money(p.price)}</div><span class="old-price">${money(Math.min(29.9,p.price*1.35))}</span></div><button class="buy" data-detail="${escapeHtml(p.id)}">Ver produto →</button></div></article>`).join('');

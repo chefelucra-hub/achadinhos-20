@@ -2,7 +2,16 @@ api=async function(path,options={}){
  const r=await fetch(`${CFG.SUPABASE_URL}${path}`,{...options,headers:{...headers(),...options.headers}});
  const responseText=await r.text();let data=null;
  if(responseText){try{data=JSON.parse(responseText)}catch{data=responseText}}
- if(!r.ok)throw new Error(data?.message||'Não foi possível concluir.');
+ if(!r.ok){
+  const message=data?.message||String(data||'Não foi possível concluir.');
+  if(/jwt expired|invalid jwt|expired/i.test(message)){
+   sessionStorage.removeItem('a20-token');
+   alert('Sua sessão do painel venceu. Entre de novo e toque no botão novamente.');
+   location.reload();
+   throw new Error('Sessão vencida.');
+  }
+  throw new Error(message);
+ }
  return data;
 };
 
@@ -76,14 +85,25 @@ render=function(){
 };
 
 $('#productRows').addEventListener('click',async e=>{
- const id=e.target.dataset.checked;if(!id)return;
- e.preventDefault();e.stopPropagation();e.target.disabled=true;e.target.textContent='Salvando...';
+ const id=e.target.dataset.checked,changeId=e.target.dataset.changePrice;if(!id&&!changeId)return;
+ e.preventDefault();e.stopPropagation();
+ const productId=id||changeId,item=items.find(x=>x.id===productId);
+ if(!item)return;
+ let newPrice=Number(item.price);
+ if(changeId){
+  const typed=prompt(`Qual é o preço atual na Shopee para "${item.name}"?`,String(item.price).replace('.',','));
+  if(typed===null)return;
+  newPrice=Number(String(typed).replace(/[^\d,.-]/g,'').replace(',','.'));
+  if(!newPrice||newPrice<=0){alert('Preço inválido.');return}
+ }
+ e.target.disabled=true;e.target.textContent='Salvando...';
  try{
   const checkedAt=new Date().toISOString();
-  await api(`/rest/v1/products?id=eq.${id}`,{method:'PATCH',body:JSON.stringify({last_checked_at:checkedAt}),headers:{Prefer:'return=minimal'}});
-  const item=items.find(x=>x.id===id);if(item)item.last_checked_at=checkedAt;
-  render();toast('✓ Produto conferido hoje');
- }catch(err){e.target.disabled=false;e.target.textContent='Conferido hoje';alert(`Não foi possível marcar: ${err.message}`)}
+  const body={last_checked_at:checkedAt,last_checked_price:newPrice,price:newPrice,active:newPrice<=20};
+  await api(`/rest/v1/products?id=eq.${productId}`,{method:'PATCH',body:JSON.stringify(body),headers:{Prefer:'return=minimal'}});
+  Object.assign(item,body);
+  render();toast(newPrice<=20?'✓ Preço conferido':'Produto ocultado: passou de R$20');
+ }catch(err){e.target.disabled=false;e.target.textContent=id?'Preço OK':'Mudou preço';if(err.message!=='Sessão vencida.')alert(`Não foi possível marcar: ${err.message}`)}
 },true);
 
 // Preenchimento rápido usando o texto copiado pelo botão "Copiar Informação" da Shopee.
