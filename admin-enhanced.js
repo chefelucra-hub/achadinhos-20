@@ -20,6 +20,28 @@ const weekEvents=()=>{
  return visitorEvents.filter(event=>new Date(event.created_at).getTime()>=min);
 };
 const uniqueSessions=events=>new Set(events.map(event=>event.session_id).filter(Boolean)).size;
+const WHATSAPP_GROUP_URL='https://chat.whatsapp.com/IfJcfvUb3qGGsMD5A3uDuQ';
+
+function productShareMessage(item){
+ const price=money(item.price);
+ const link=String(item.affiliate_url||'').trim();
+ return `Achadinho até R$20\n\n${item.name}\nPor ${price}\n\nCompre aqui:\n${link}\n\nEntre no grupo para receber mais ofertas:\n${WHATSAPP_GROUP_URL}`;
+}
+
+async function copyAdminText(value){
+ if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return}
+ const area=document.createElement('textarea');
+ area.value=value;area.setAttribute('readonly','');area.style.position='fixed';area.style.left='-9999px';
+ document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();
+}
+
+async function shareProductToWhatsApp(item){
+ const text=productShareMessage(item);
+ if(navigator.share){
+  try{await navigator.share({title:item.name,text});toast('Escolha o WhatsApp e envie no grupo.');return}catch(err){if(err.name==='AbortError')return}
+ }
+ window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank','noopener');
+}
 
 function renderVisits(){
  const today=todayEvents(),week=weekEvents(),views=visitorEvents.filter(event=>event.event_type==='product_view');
@@ -62,11 +84,28 @@ render=function(){
  $('#filterHint').textContent=hasFilters?'Resultado dos filtros escolhidos':'Mostrando todo o catálogo';
  $('#productRows').innerHTML=list.map(x=>{
   const reviewed=checkedToday(x),isActive=x.active&&x.price<=20;
-  return `<tr class="${reviewed?'reviewed-today':'needs-review'}"><td><div class="product-cell"><img src="${escapeAdmin(x.image_url)}" alt=""><b>${escapeAdmin(x.name)}</b></div></td><td>${escapeAdmin(x.category)}<br><small>${escapeAdmin(x.subcategory)}</small></td><td><b>${money(x.price)}</b><div class="review-state ${reviewed?'done':'pending'}">${reviewed?'✓ Conferido hoje':escapeAdmin(reviewLabel(x.last_checked_at))}</div></td><td><span class="status ${isActive?'on':'off'}">${isActive?'Ativo':'Oculto'}</span></td><td class="actions"><a class="shop-link" href="${escapeAdmin(x.affiliate_url)}" target="_blank" rel="noopener">Abrir Shopee</a><div class="review-actions"><button class="price-ok" data-checked="${escapeAdmin(x.id)}" ${reviewed?'disabled':''}>${reviewed?'✓ OK':'Preço OK'}</button><button class="price-change" data-change-price="${escapeAdmin(x.id)}">Mudou preço</button></div><button data-edit="${escapeAdmin(x.id)}">Editar</button><button data-delete="${escapeAdmin(x.id)}">Excluir</button></td></tr>`;
+  return `<tr class="${reviewed?'reviewed-today':'needs-review'}"><td><div class="product-cell"><img src="${escapeAdmin(x.image_url)}" alt=""><b>${escapeAdmin(x.name)}</b></div></td><td>${escapeAdmin(x.category)}<br><small>${escapeAdmin(x.subcategory)}</small></td><td><b>${money(x.price)}</b><div class="review-state ${reviewed?'done':'pending'}">${reviewed?'✓ Conferido hoje':escapeAdmin(reviewLabel(x.last_checked_at))}</div></td><td><span class="status ${isActive?'on':'off'}">${isActive?'Ativo':'Oculto'}</span></td><td class="actions"><a class="shop-link" href="${escapeAdmin(x.affiliate_url)}" target="_blank" rel="noopener">Abrir Shopee</a><button class="share-whatsapp" data-share-whatsapp="${escapeAdmin(x.id)}">Compartilhar ZAP</button><button class="copy-share" data-copy-share="${escapeAdmin(x.id)}">Copiar mensagem</button><div class="review-actions"><button class="price-ok" data-checked="${escapeAdmin(x.id)}" ${reviewed?'disabled':''}>${reviewed?'✓ OK':'Preço OK'}</button><button class="price-change" data-change-price="${escapeAdmin(x.id)}">Mudou preço</button></div><button data-edit="${escapeAdmin(x.id)}">Editar</button><button data-delete="${escapeAdmin(x.id)}">Excluir</button></td></tr>`;
  }).join('');
  $('#adminEmpty').hidden=list.length>0;
  renderVisits();
 };
+
+$('#copyGroupLink')?.addEventListener('click',async()=>{
+ try{await copyAdminText(WHATSAPP_GROUP_URL);toast('Link do grupo copiado.')}catch(err){alert(`Não foi possível copiar: ${err.message}`)}
+});
+
+$('#productRows').addEventListener('click',async event=>{
+ const share=event.target.closest('[data-share-whatsapp]'),copy=event.target.closest('[data-copy-share]');
+ if(!share&&!copy)return;
+ event.preventDefault();event.stopPropagation();
+ const id=(share||copy).dataset.shareWhatsapp||(share||copy).dataset.copyShare;
+ const item=items.find(product=>String(product.id)===String(id));
+ if(!item)return;
+ try{
+  if(share)await shareProductToWhatsApp(item);
+  if(copy){await copyAdminText(productShareMessage(item));toast('Mensagem copiada. Agora cole no WhatsApp.')}
+ }catch(err){alert(`Não foi possível compartilhar: ${err.message}`)}
+},true);
 
 const originalLoad=load;
 load=async function(){
