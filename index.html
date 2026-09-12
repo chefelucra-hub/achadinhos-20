@@ -22,10 +22,15 @@
   <main>
     <section class="hero">
       <span class="eyebrow">PREÇO BAIXO DE VERDADE</span>
-      <h1>Coisas incríveis.<br><em>Preços pequenininhos.</em></h1>
-      <p>Uma seleção esperta de produtos úteis, bonitos e divertidos — nenhum acima de R$20.</p>
+      <h1>Encontre seu próximo <em>achadinho</em></h1>
+      <p>Pesquise ou escolha um atalho. Todos os produtos custam até R$20.</p>
       <div class="search"><span>⌕</span><input id="search" placeholder="O que você está procurando?" /></div>
       <div class="hero-proof"><span>✓ Compra na Shopee</span><span>✓ Links verificados</span><span>✓ Seleção diária</span></div>
+    </section>
+
+    <section class="quick-filter-wrap" aria-labelledby="quickTitle">
+      <div class="quick-filter-copy"><small>ENCONTRE MAIS RÁPIDO</small><h2 id="quickTitle">O que você procura?</h2></div>
+      <nav class="quick-filters" aria-label="Filtros rápidos"><button class="active" data-quick="all"><span>✨</span> Todos</button><button data-quick="under10"><span>💸</span> Até R$10</button><button data-quick="popular"><span>🔥</span> Mais vistos</button><button data-quick="new"><span>🆕</span> Novidades</button></nav>
     </section>
 
     <section class="departments">
@@ -38,7 +43,6 @@
       <div><small id="sectionLabel">OFERTAS DE HOJE</small><h2 id="sectionTitle">Os queridinhos</h2></div>
       <div class="results"><select id="sort" aria-label="Ordenar"><option value="popular">Mais populares</option><option value="low">Menor preço</option><option value="high">Maior preço</option><option value="new">Novidades</option></select><span id="count"></span></div>
     </section>
-    <nav class="quick-filters" aria-label="Filtros rápidos"><button class="active" data-quick="all">Todos</button><button data-quick="under10">Até R$10</button><button data-quick="popular">Mais vistos</button><button data-quick="new">Novidades</button></nav>
     <section id="products" class="grid"></section>
     <section id="empty" class="empty" hidden><b>Nenhum achadinho encontrado</b><span>Tente outra busca ou categoria.</span></section>
 
